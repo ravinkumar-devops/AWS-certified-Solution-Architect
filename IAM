@@ -1,0 +1,172 @@
+IAM:
+
+- IAM stands for Identity and Access Management.
+- This AWS service is responsible for Authentication and Authorization of a user.
+- It checks for who the user is and what access the user possesses.
+
+  - Authentication = verifying who the user is.
+  - Authorization = deciding what the user is allowed to do.
+
+Groups:
+
+  - A group is a collection of IAM users.
+  - Permissions are attached to the group through IAM policies.
+  - Users in the group inherit those permissions.
+
+Roles :
+
+  - An IAM role is an identity that grants temporary permissions to an AWS service or entity to access other AWS services.
+  - These permissions are defined in IAM policies, which specify what actions the role can perform on which resources.
+
+IAM policies :
+
+  - A set of statement which consists of below components :
+    
+    - Version : Optional
+    - ID : Name of the policy 
+    - statement :
+        - SID : An identifier for the statement
+        - Effect : "Allow"/"Deny"
+        - Principal : account/user/role to which this policy applies to
+        - Action : list of action this policy allows or denies 
+        - Resource : list of resources to which the action applied to
+        - Condition : Conditions for when ths policy is in effect (optional)
+
+Types of policies :
+
+  - AWS managed policies : predefined policies created and maintained by AWS.
+  - Customer managed policies : custom policies created by the customer and can be reused across multiple IAM entities.
+  - Inline policies : policies created for a specific IAM entity such as a user, group, or role. They are not reusable and are attached directly to that one entity.
+
+Key difference :
+
+  - Managed policies can be attached to multiple users, groups, and roles.
+  - Inline policies are attached to only one IAM entity and are not reusable.
+
+Password Policy in AWS IAM :
+
+  - A password policy is a set of rules that define how IAM user passwords must be created and managed.
+  - It is configured at the account level and applies to IAM users in that AWS account.
+  - It helps enforce better security by requiring strong passwords.
+
+Common password policy settings :
+
+  - Minimum password length
+  - Require at least one uppercase letter
+  - Require at least one lowercase letter
+  - Require at least one number
+  - Require at least one non-alphanumeric character
+  - Prevent password reuse
+  - Set password expiration period
+  - Allow users to change their own passwords
+  - Require users to change password after reset
+
+Important points :
+
+  - Password policy is used for IAM users only, not for root account.
+  - It does not apply to federated users or roles.
+  - It helps meet security standards and reduces risk of weak passwords.
+
+Ex : Let's take an example for the windows password standard set by the organizations.
+
+ - should have atleast 16 characters.
+ - Minimum password length
+  - Require at least one uppercase letter
+  - Require at least one lowercase letter
+  - Require at least one number
+  - Require at least one non-alphanumeric character
+  - Prevent password reuse
+  - Set password expiration period
+  - Allow users to change their own passwords
+  - Require users to change password after reset
+
+Accessing Cross Account Access :
+
+  - In cross-account access, one AWS account wants to access a resource in another AWS account.
+  - The resource-owning account creates the IAM role.
+  - The role contains a trust policy and a permission policy.
+
+Example :
+
+  - Account A contains an EC2 instance.
+  - Account B contains an S3 bucket.
+  - Account A wants to access the S3 bucket in Account B.
+
+Step-by-step :
+
+  1. Create a role in Account B, for example : CrossAccountS3AccessRole.
+  2. Add a trust policy in Account B so that Account A can assume the role.
+  3. Add a permission policy in Account B to allow access to the S3 bucket.
+  4. In Account A, allow the EC2 instance or user to call sts:AssumeRole.
+  5. STS checks the trust policy and, if valid, returns temporary credentials.
+  6. The user or EC2 instance uses those temporary credentials to access the S3 bucket.
+
+Trust policy example (Account B):
+
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": "arn:aws:iam::ACCOUNT_A_ID:root"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }
+
+Permission policy example (Account B):
+
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        "Resource": [
+          "arn:aws:s3:::my-bucket-from-account-b",
+          "arn:aws:s3:::my-bucket-from-account-b/*"
+        ]
+      }
+    ]
+  }
+
+Account A permission to assume the role:
+
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Resource": "arn:aws:iam::ACCOUNT_B_ID:role/CrossAccountS3AccessRole"
+      }
+    ]
+  }
+
+```text
+Diagram :
+
+  Account A (EC2 / IAM User) -> assumes role in Account B -> STS gives temporary credentials -> access S3 bucket in Account B
+
+  Account A  ------------------->  Account B
+  sts:AssumeRole               Role: CrossAccountS3AccessRole
+      |                               |
+      |                               | Trust policy allows Account A
+      |                               |
+      |------------ STS returns temporary credentials ------------>
+      |                               |
+   Access S3 bucket in Account B using temporary credentials
+
+Key concept :
+
+  - Account B owns the resource and creates the role.
+  - Account B decides who is trusted through the trust policy.
+  - Account B decides what actions are allowed through the permission policy.
+  - Account A assumes the role using STS and gets temporary credentials.
+
+
